@@ -5,31 +5,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
 
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from starlette.status import HTTP_401_UNAUTHORIZED
-import secrets
-import os
-from dotenv import load_dotenv
-
-load_dotenv(os.path.join('.env'))
-
-API_USERNAME = os.getenv("API_USERNAME")
-API_PASSWORD = os.getenv("API_PASSWORD")
-
-security = HTTPBasic()
-
-def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_username = secrets.compare_digest(credentials.username, API_USERNAME)
-    correct_password = secrets.compare_digest(credentials.password, API_PASSWORD)
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail='Incorrect username or password',
-            headers={'WWW-Authenticate': 'Basic'},
-        )
-    return credentials.username
-
 app = FastAPI()
 
 class Data(BaseModel):
@@ -56,7 +31,7 @@ async def predict(data):
     return category, confidence
 
 @app.post('/getclass/')
-async def get_class(data: Data, username: str = Depends(get_current_username)):
+async def get_class(data: Data):
     category, confidence = await predict(data)
     res = {'class': category, 'confidence':confidence}
     return {'results': res}
